@@ -1,6 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using ICM_ROTA_MVC.Models;
 using Microsoft.Data.SqlClient;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 
 namespace ICM_ROTA_MVC.Controllers
 {
@@ -21,7 +24,7 @@ namespace ICM_ROTA_MVC.Controllers
         }
 
         [HttpPost]
-        public IActionResult Login(LoginViewModel model)
+        public async Task<IActionResult> Login(LoginViewModel model)
         {
             if (ModelState.IsValid)
             {
@@ -30,25 +33,38 @@ namespace ICM_ROTA_MVC.Controllers
                     using (SqlConnection conn = new SqlConnection(_connectionString))
                     {
                         conn.Open();
-                        // KULLANICI_PANEL tablosunda Kullanıcı_Mail ve Password kontrolü
-                        string sql = "SELECT COUNT(1) FROM KULLANICI_PANEL WHERE Kullanıcı_Mail = @mail AND Password = @sifre";
+                        string sql = "SELECT Kullanıcı_ID, Kullanıcı_Mail, Kullanıcı_Name, Kullanıcı_Surname FROM KULLANICI_PANEL WHERE Kullanıcı_Mail = @mail AND Password = @sifre";
                         
                         using (SqlCommand cmd = new SqlCommand(sql, conn))
                         {
                             cmd.Parameters.AddWithValue("@mail", model.Email);
                             cmd.Parameters.AddWithValue("@sifre", model.Password);
 
-                            int userCount = (int)cmd.ExecuteScalar();
+                            using (SqlDataReader dr = cmd.ExecuteReader())
+                            {
+                                if (dr.Read())
+                                {
+                                    var claims = new List<Claim>
+                                    {
+                                        new Claim(ClaimTypes.Name, dr["Kullanıcı_Mail"].ToString() ?? ""),
+                                        new Claim(ClaimTypes.NameIdentifier, dr["Kullanıcı_ID"].ToString() ?? ""),
+                                        new Claim(ClaimTypes.GivenName, dr["Kullanıcı_Name"].ToString() ?? ""),
+                                        new Claim(ClaimTypes.Surname, dr["Kullanıcı_Surname"].ToString() ?? ""),
+                                        new Claim("Email", dr["Kullanıcı_Mail"].ToString() ?? "")
+                                    };
 
-                            if (userCount > 0)
-                            {
-                                // Şimdilik giriş başarılı sayıyoruz. 
-                                // Gelecekte Cookie authentication eklenebilir.
-                                return RedirectToAction("Index", "Home");
-                            }
-                            else
-                            {
-                                ModelState.AddModelError("", "E-posta adresi veya şifre hatalı.");
+                                    var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+                                    var authProperties = new AuthenticationProperties { IsPersistent = true };
+
+                                    await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, 
+                                        new ClaimsPrincipal(claimsIdentity), authProperties);
+
+                                    return RedirectToAction("Index", "Home");
+                                }
+                                else
+                                {
+                                    ModelState.AddModelError("", "E-posta adresi veya şifre hatalı.");
+                                }
                             }
                         }
                     }
@@ -61,8 +77,9 @@ namespace ICM_ROTA_MVC.Controllers
             return View(model);
         }
 
-        public IActionResult Logout()
+        public async Task<IActionResult> Logout()
         {
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             return RedirectToAction("Login");
         }
     }

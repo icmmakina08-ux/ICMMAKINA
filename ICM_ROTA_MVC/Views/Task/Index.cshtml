@@ -14,9 +14,49 @@
         <p class="text-muted">Departman bazlı görev dağılımı ve takip sistemi.</p>
     </div>
     <div class="d-flex gap-2">
+        <button class="btn btn-outline-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#outlookModal" style="border-radius: 10px; padding: 12px 24px;">
+            <i class="fa-solid fa-robot me-2"></i>AI ile Mailden Oluştur
+        </button>
         <button class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#addTaskModal" style="background-color: var(--primary-color); border: none; border-radius: 10px; padding: 12px 24px;">
             <i class="fa-solid fa-plus me-2"></i>Yeni Görev Tanımla
         </button>
+    </div>
+</div>
+
+<!-- Outlook Mail Modal -->
+<div class="modal fade" id="outlookModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div class="modal-header border-0 pb-0 pt-4 px-4">
+                <h5 class="fw-bold"><i class="fa-solid fa-envelope-open-text me-2"></i>Outlook Mail Seçin</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="mb-4">
+                    <label class="form-label small fw-bold text-muted">ANALİZ EDİLECEK HESAP (Outlook)</label>
+                    <div class="input-group">
+                        <input type="email" id="outlookEmailInput" class="form-control" placeholder="E-posta adresini girin..." value="@User.Identity?.Name">
+                        <button class="btn btn-primary" onclick="fetchEmails()"><i class="fa-solid fa-sync me-1"></i>Mailleri Getir</button>
+                    </div>
+                    <div class="small text-muted mt-1">Varsayılan olarak giriş yaptığınız hesap (@User.Identity?.Name) kullanılır.</div>
+                </div>
+
+                <div id="emailListContainer" class="list-group list-group-flush border rounded" style="max-height: 400px; overflow-y: auto; display: none;">
+                    <!-- Mailler buraya gelecek -->
+                </div>
+
+                <div id="aiLoading" class="text-center py-5" style="display: none;">
+                    <div class="spinner-border text-primary mb-3" role="status"></div>
+                    <p class="text-muted fw-bold">Gemini AI Maili Analiz Ediyor...</p>
+                    <small>Bu işlem birkaç saniye sürebilir.</small>
+                </div>
+
+                <div id="aiResult" class="mt-4" style="display: none;">
+                    <h6 class="fw-bold border-bottom pb-2 mb-3">AI Tarafından Önerilen Görevler</h6>
+                    <div id="aiTasksContainer"></div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -279,6 +319,85 @@
                 } else {
                     item.style.display = "none";
                 }
+            });
+        }
+
+        // --- AI & OUTLOOK MANTIGI ---
+
+        function fetchEmails() {
+            var email = $('#outlookEmailInput').val();
+            $('#emailListContainer').hide().empty().html('<div class="p-3 text-center text-muted">Yükleniyor...</div>').show();
+            
+            $.get('/Task/GetEmails', { email: email }, function(response) {
+                if(response.success) {
+                    $('#emailListContainer').empty();
+                    response.data.forEach(function(mail) {
+                        var html = `
+                            <a href="javascript:void(0)" class="list-group-item list-group-item-action p-3" onclick="analyzeMail('${encodeURIComponent(mail.body)}')">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1 fw-bold text-dark">${mail.subject}</h6>
+                                    <small class="text-muted">${mail.received}</small>
+                                </div>
+                                <p class="mb-1 small text-muted text-truncate">${mail.preview}</p>
+                            </a>
+                        `;
+                        $('#emailListContainer').append(html);
+                    });
+                } else {
+                    $('#emailListContainer').html('<div class="p-3 text-danger">' + response.message + '</div>');
+                }
+            });
+        }
+
+        function analyzeMail(body) {
+            body = decodeURIComponent(body);
+            $('#emailListContainer').hide();
+            $('#aiLoading').show();
+            $('#aiResult').hide();
+
+            $.post('/Task/AnalyzeEmail', { body: body }, function(data) {
+                $('#aiLoading').hide();
+                $('#aiResult').show();
+                $('#aiTasksContainer').empty();
+
+                if (data && Array.isArray(data)) {
+                    data.forEach(function(task) {
+                        var taskHtml = `
+                            <div class="card mb-3 border-light shadow-sm">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <h6 class="fw-bold text-primary">${task.Baslik}</h6>
+                                        <span class="badge bg-info">${task.Oncelik}</span>
+                                    </div>
+                                    <p class="small text-muted mb-2">${task.Aciklama}</p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="small fw-bold text-dark"><i class="fa-solid fa-user me-1"></i>Aday: ${task.AtanacakEmail}</span>
+                                        <button class="btn btn-sm btn-success" onclick="quickSaveTask('${task.Baslik}', '${task.Aciklama}', '${task.AtanacakEmail}', '${task.Oncelik}')">
+                                            <i class="fa-solid fa-check me-1"></i>Onayla ve Oluştur
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        $('#aiTasksContainer').append(taskHtml);
+                    });
+                } else {
+                    $('#aiTasksContainer').html('<div class="alert alert-warning">AI işe yarar bir görev bulamadı veya bir hata oluştu.</div>');
+                }
+            });
+        }
+
+        function quickSaveTask(baslik, aciklama, email, oncelik) {
+            // Basitlik için, eşleşen ilk kullanıcıID'sini buluyoruz (Sadece mail üzerinden eşleşme)
+            // Daha gelişmiş bir eşleşme logic'i eklenebilir.
+            $.post('/Task/AddTask', { 
+                Baslik: baslik, 
+                Aciklama: aciklama, 
+                AtananKisi: email,
+                Oncelik: oncelik 
+            }, function() {
+                alert('Görev başarıyla eklendi!');
+                location.reload();
             });
         }
     </script>

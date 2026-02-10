@@ -86,10 +86,16 @@
             <div class="right-section">
                 <div class="user-profile">
                     <div class="text-end d-none d-sm-block">
-                        <div class="fw-bold" style="font-size: 14px;">Giriş Yapıldı</div>
+                        <div class="fw-bold" style="font-size: 14px;">@User.Identity?.Name</div>
                         <div class="text-muted" style="font-size: 12px;">Yönetici</div>
                     </div>
-                    <div class="user-avatar">AD</div>
+                    @{
+                        var firstName = User.FindFirst(System.Security.Claims.ClaimTypes.GivenName)?.Value ?? "";
+                        var lastName = User.FindFirst(System.Security.Claims.ClaimTypes.Surname)?.Value ?? "";
+                        var initials = (firstName.Length > 0 ? firstName.Substring(0, 1).ToUpper() : "") + 
+                                       (lastName.Length > 0 ? lastName.Substring(0, 1).ToUpper() : "");
+                    }
+                    <div class="user-avatar">@(string.IsNullOrEmpty(initials) ? "AD" : initials)</div>
                 </div>
             </div>
         </header>

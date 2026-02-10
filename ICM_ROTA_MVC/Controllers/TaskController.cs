@@ -2,17 +2,25 @@ using Microsoft.AspNetCore.Mvc;
 using ICM_ROTA_MVC.Models;
 using Microsoft.Data.SqlClient;
 using System.Collections.Generic;
+using System.Linq;
+using Newtonsoft.Json;
+using ICM_ROTA_MVC.Services;
+using System.Threading.Tasks;
 
 namespace ICM_ROTA_MVC.Controllers
 {
     public class TaskController : Controller
     {
         private readonly string _connectionString;
+        private readonly OutlookService _outlookService;
+        private readonly GeminiService _geminiService;
 
-        public TaskController(IConfiguration configuration)
+        public TaskController(IConfiguration configuration, OutlookService outlookService, GeminiService geminiService)
         {
             _connectionString = configuration.GetConnectionString("DefaultConnection") 
                 ?? throw new InvalidOperationException("Bağlantı dizesi bulunamadı.");
+            _outlookService = outlookService;
+            _geminiService = geminiService;
         }
 
         // Görevleri Listele
@@ -158,6 +166,59 @@ namespace ICM_ROTA_MVC.Controllers
                 }
             }
             return Ok();
+        }
+        // AI: Outlook Maillerini Getir
+        public async System.Threading.Tasks.Task<IActionResult> GetEmails(string email)
+        {
+            // Eğer parametre boşsa giriş yapmış kullanıcının mailini kullan
+            var targetEmail = string.IsNullOrEmpty(email) ? User.Identity?.Name : email;
+
+            if (string.IsNullOrEmpty(targetEmail)) 
+                return Json(new { success = false, message = "E-posta adresi belirlenemedi. Lütfen giriş yapın." });
+            
+            var emails = await _outlookService.GetRecentEmailsAsync(targetEmail);
+            var result = emails.Select(e => new {
+                id = e.Id,
+                subject = e.Subject,
+                preview = e.BodyPreview,
+                body = e.Body.Content,
+                received = e.ReceivedDateTime?.ToString("dd.MM.yyyy HH:mm")
+            });
+            
+            return Json(new { success = true, data = result });
+        }
+
+        // AI: Maili Gemini ile Analiz Et
+        [HttpPost]
+        public async System.Threading.Tasks.Task<IActionResult> AnalyzeEmail(string body)
+        {
+            // Kullanıcı listesini JSON olarak hazırla (Gemini eşleştirme yapabilsin)
+            List<UserLookup> users = new List<UserLookup>();
+            using (SqlConnection conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                string userSql = "SELECT Kullanıcı_ID, Kullanıcı_Mail, Kullanıcı_Name, Kullanıcı_Surname FROM KULLANICI_PANEL";
+                using (SqlCommand userCmd = new SqlCommand(userSql, conn))
+                {
+                    using (SqlDataReader dr = userCmd.ExecuteReader())
+                    {
+                        while (dr.Read())
+                        {
+                            users.Add(new UserLookup {
+                                ID = (int)dr["Kullanıcı_ID"],
+                                Email = dr["Kullanıcı_Mail"].ToString() ?? "",
+                                FullName = (dr["Kullanıcı_Name"].ToString() + " " + dr["Kullanıcı_Surname"].ToString()).Trim()
+                            });
+                        }
+                    }
+                }
+            }
+            string userListJson = JsonConvert.SerializeObject(users.Select(u => u.Email));
+
+            // Gemini'ye gönder
+            string aiResponse = await _geminiService.AnalyzeEmailAsync(body, userListJson);
+            
+            return Content(aiResponse, "application/json");
         }
     }
 }
