@@ -1,0 +1,285 @@
+@model ICM_ROTA_MVC.Models.TaskViewModel
+@{
+    ViewData["Title"] = "Görev Yönetimi";
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold m-0 text-dark">Görev Takip Paneli</h2>
+        <p class="text-muted">Canlı veritabanı bağlantısıyla görevleri yönetin.</p>
+    </div>
+    <div>
+        <h2 class="fw-bold m-0 text-dark">Görev Takip Paneli</h2>
+        <p class="text-muted">Departman bazlı görev dağılımı ve takip sistemi.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <button class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#addTaskModal" style="background-color: var(--primary-color); border: none; border-radius: 10px; padding: 12px 24px;">
+            <i class="fa-solid fa-plus me-2"></i>Yeni Görev Tanımla
+        </button>
+    </div>
+</div>
+
+<!-- Modern Sekme Yapısı -->
+<ul class="nav nav-pills mb-4 p-1 bg-white shadow-sm rounded-pill d-inline-flex" id="taskTabs" role="tablist" style="border: 1px solid #e2e8f0;">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active rounded-pill px-4" id="inprogress-tab" data-bs-toggle="pill" data-bs-target="#inprogress" type="button" role="tab">
+            <i class="fa-solid fa-spinner fa-spin-pulse me-2"></i>Aktif
+            <span class="badge bg-warning text-dark ms-2">@Model.Tasks.Count(t => t.Durum == "Devam Ediyor")</span>
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link rounded-pill px-4" id="waiting-tab" data-bs-toggle="pill" data-bs-target="#waiting" type="button" role="tab">
+            <i class="fa-solid fa-clock me-2"></i>Beklemede
+            <span class="badge bg-secondary ms-2">@Model.Tasks.Count(t => t.Durum == "Beklemede")</span>
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link rounded-pill px-4" id="completed-tab" data-bs-toggle="pill" data-bs-target="#completed" type="button" role="tab">
+            <i class="fa-solid fa-circle-check me-2"></i>Tamamlanan
+            <span class="badge bg-success ms-2">@Model.Tasks.Count(t => t.Durum == "Tamamlandi")</span>
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content pt-2" id="taskTabContent">
+    <!-- AKTİF GÖREVLER -->
+    <div class="tab-pane fade show active" id="inprogress" role="tabpanel">
+        <div class="row">
+            @foreach (var task in Model.Tasks.Where(t => t.Durum == "Devam Ediyor"))
+            {
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="card border-0 shadow-sm h-100 position-relative" style="border-radius: 16px; border-left: 4px solid #ffc107 !important;">
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <span class="badge @(task.Oncelik == "Yuksek" ? "bg-danger" : "bg-warning text-dark") rounded-pill px-3">@task.Oncelik</span>
+                                <div class="dropdown">
+                                    <button class="btn btn-link text-muted p-0" data-bs-toggle="dropdown"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+                                    <ul class="dropdown-menu border-0 shadow-sm">
+                                        <li><a class="dropdown-item" href="javascript:void(0)" onclick="updateStatus(@task.ID, 'Beklemede')">Durdur (Beklemeye Al)</a></li>
+                                        <li><a class="dropdown-item text-success fw-bold" href="javascript:void(0)" onclick="updateStatus(@task.ID, 'Tamamlandi')">Tamamla</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <h5 class="fw-bold mb-2">@task.Baslik</h5>
+                            <p class="text-muted small mb-4">@task.Aciklama</p>
+                            
+                            <div class="d-flex align-items-center justify-content-between mt-auto pt-2 border-top">
+                                <div class="d-flex flex-column">
+                                    <div class="d-flex align-items-center mb-1">
+                                        <div class="avatar-group d-flex">
+                                            @{
+                                                var personeller = task.AtananKisi.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries);
+                                                var ids = task.Kullanici_IDs.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                                                int count = 0;
+                                            }
+                                            @for (int i = 0; i < personeller.Length; i++)
+                                            {
+                                                var isim = personeller[i].Trim();
+                                                var userId = ids.Length > i ? ids[i] : "?";
+                                                <div class="avatar-sm bg-light rounded-circle d-flex align-items-center justify-content-center border border-white" 
+                                                     style="width: 28px; height: 28px; font-size: 10px; font-weight: bold; color: var(--primary-color); margin-left: @(count > 0 ? "-8px" : "0"); z-index: @(10 - count);" 
+                                                     data-bs-toggle="tooltip" data-bs-placement="top" title="Mail: @isim | ID: @userId">
+                                                    @(isim.Length > 0 ? isim.Substring(0, 1).ToUpper() : "?")
+                                                </div>
+                                                count++;
+                                            }
+                                        </div>
+                                        <span class="small fw-semibold ms-2" style="font-size: 11px; color: var(--text-muted);">
+                                            @(personeller.Length > 1 ? personeller.Length + " Kişi" : task.AtananKisi)
+                                        </span>
+                                    </div>
+                                    @if (task.BitisTarihi.HasValue)
+                                    {
+                                        <div class="text-success small" style="font-size: 11px;">
+                                            <i class="fa-solid fa-calendar-check me-1"></i> Bitiş: @task.BitisTarihi.Value.ToString("dd.MM.yyyy HH:mm")
+                                        </div>
+                                    }
+                                </div>
+                                <span class="badge bg-warning-subtle text-warning border border-warning px-2 py-1" style="font-size: 10px;">Çalışılıyor</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+            @if (!Model.Tasks.Any(t => t.Durum == "Devam Ediyor")) { <div class="col-12 text-center py-5 text-muted"><i class="fa-solid fa-mug-hot fa-3x mb-3 opacity-25"></i><p>Şu an aktif bir görev yok.</p></div> }
+        </div>
+    </div>
+
+    <!-- BEKLEYEN GÖREVLER -->
+    <div class="tab-pane fade" id="waiting" role="tabpanel">
+        <div class="row">
+            @foreach (var task in Model.Tasks.Where(t => t.Durum == "Beklemede"))
+            {
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="card border-0 shadow-sm h-100" style="border-radius: 16px; opacity: 0.9;">
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <span class="badge bg-light text-dark border rounded-pill px-3">@task.Oncelik</span>
+                                <div class="dropdown">
+                                    <button class="btn btn-link text-muted p-0" data-bs-toggle="dropdown"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+                                    <ul class="dropdown-menu border-0 shadow-sm">
+                                        <li><a class="dropdown-item text-primary fw-bold" href="javascript:void(0)" onclick="updateStatus(@task.ID, 'Devam Ediyor')">Başlat (Harekete Geç)</a></li>
+                                        <li><a class="dropdown-item text-success" href="javascript:void(0)" onclick="updateStatus(@task.ID, 'Tamamlandi')">Direkt Tamamla</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <h5 class="fw-bold mb-2">@task.Baslik</h5>
+                            <p class="text-muted small mb-4">@task.Aciklama</p>
+                            <div class="d-flex align-items-center justify-content-between mt-auto pt-2 border-top">
+                                <div class="avatar-group d-flex">
+                                    @{
+                                        var personellerW = task.AtananKisi.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries);
+                                        var idsW = task.Kullanici_IDs.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                                    }
+                                    @for (int i = 0; i < personellerW.Length; i++)
+                                    {
+                                        var isim = personellerW[i].Trim();
+                                        var userId = idsW.Length > i ? idsW[i] : "?";
+                                        <div class="avatar-sm bg-light rounded-circle d-flex align-items-center justify-content-center border border-white" 
+                                             style="width: 24px; height: 24px; font-size: 10px; font-weight: bold; margin-left: @(i > 0 ? "-6px" : "0");" 
+                                             data-bs-toggle="tooltip" title="Mail: @isim | ID: @userId">
+                                            @(isim.Length > 0 ? isim.Substring(0, 1).ToUpper() : "?")
+                                        </div>
+                                    }
+                                </div>
+                                <span class="text-muted small" style="font-size: 11px;">Beklemede</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+            @if (!Model.Tasks.Any(t => t.Durum == "Beklemede")) { <div class="col-12 text-center py-5 text-muted"><p>Bekleyen görev bulunmuyor.</p></div> }
+        </div>
+    </div>
+
+    <!-- TAMAMLANANLAR -->
+    <div class="tab-pane fade" id="completed" role="tabpanel">
+        <div class="row">
+            @foreach (var task in Model.Tasks.Where(t => t.Durum == "Tamamlandi"))
+            {
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="card border-0 shadow-sm h-100" style="border-radius: 16px; background-color: #fcfdfd;">
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <span class="badge bg-success-subtle text-success px-3 rounded-pill">Bitti</span>
+                                <div class="dropdown">
+                                    <button class="btn btn-link text-muted p-0" data-bs-toggle="dropdown"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+                                    <ul class="dropdown-menu border-0 shadow-sm">
+                                        <li><a class="dropdown-item" href="javascript:void(0)" onclick="updateStatus(@task.ID, 'Devam Ediyor')">Yeniden Aç</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <h5 class="fw-bold mb-2 text-decoration-line-through opacity-75">@task.Baslik</h5>
+                            <p class="text-muted small">@task.Aciklama</p>
+                            <div class="mt-auto pt-2 border-top d-flex justify-content-between align-items-center">
+                                <div class="text-success small fw-bold">
+                                    <i class="fa-solid fa-calendar-check me-1"></i> @task.BitisTarihi?.ToString("dd.MM.yyyy HH:mm")
+                                </div>
+                                <div class="text-muted small" style="font-size: 10px;">ID: @task.Kullanici_IDs</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    #taskTabs .nav-link { color: #64748b; font-weight: 600; font-size: 14px; }
+    #taskTabs .nav-link.active { background-color: var(--primary-color) !important; color: white !important; }
+    #taskTabs .badge { font-size: 0.75rem; vertical-align: middle; }
+    .nav-pills .nav-link:hover:not(.active) { background-color: #f1f5f9; }
+</style>
+
+<!-- Yeni Görev Modal -->
+<div class="modal fade" id="addTaskModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div class="modal-header border-0 pb-0 pt-4 px-4">
+                <h5 class="fw-bold">Yeni Görev Oluştur</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form asp-action="AddTask" method="post">
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">GÖREV BAŞLIĞI</label>
+                        <input name="Baslik" type="text" class="form-control border-light-subtle" style="background: #f8fafc;" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">AÇIKLAMA</label>
+                        <textarea name="Aciklama" class="form-control border-light-subtle" rows="3" style="background: #f8fafc;"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label small fw-bold">ATANACAK KİŞİLER</label>
+                            <!-- Filtreleme Inputu -->
+                            <div class="input-group mb-2">
+                                <span class="input-group-text bg-white border-end-0 py-1" style="font-size: 13px; color: #64748b;">
+                                    <i class="fa-solid fa-magnifying-glass"></i>
+                                </span>
+                                <input type="text" id="userListSearch" class="form-control border-start-0 py-1" placeholder="İsim veya mail ile ara..." style="font-size: 13px; background: #fff;" onkeyup="filterUserList()">
+                            </div>
+                            <!-- Kullanıcı Listesi -->
+                            <div class="user-selection-list border rounded p-3" id="userSelectionList" style="max-height: 200px; overflow-y: auto; background: #f8fafc;">
+                                @foreach (var user in Model.Users)
+                                {
+                                    <div class="form-check mb-2 user-item" data-search="@user.FullName.ToLower() @user.Email.ToLower()">
+                                        <input class="form-check-input" type="checkbox" name="SelectedUserIds" value="@user.ID" id="user_@user.ID">
+                                        <label class="form-check-label d-flex flex-column" for="user_@user.ID">
+                                            <span class="fw-bold" style="font-size: 13px;">@user.FullName</span>
+                                            <span class="text-muted" style="font-size: 11px;">@user.Email (ID: @user.ID)</span>
+                                        </label>
+                                    </div>
+                                }
+                            </div>
+                            <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">Görev atanacak kişileri listeden seçin.</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label small fw-bold">ÖNCELİK</label>
+                            <select name="Oncelik" class="form-select border-light-subtle" style="background: #f8fafc;">
+                                <option value="Dusuk">Düşük</option>
+                                <option value="Orta" selected>Orta</option>
+                                <option value="Yuksek">Yüksek</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 p-4 pt-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn btn-primary px-4" style="background-color: var(--primary-color); border: none;">Kaydet ve Yayınla</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(function () {
+          $('[data-bs-toggle="tooltip"]').tooltip()
+        })
+
+        function updateStatus(id, newStatus) {
+            $.post('/Task/UpdateStatus', { id: id, status: newStatus }, function() {
+                location.reload();
+            });
+        }
+
+        function filterUserList() {
+            var input = document.getElementById('userListSearch');
+            var filter = input.value.toLowerCase();
+            var items = document.querySelectorAll('.user-item');
+
+            items.forEach(function(item) {
+                var searchText = item.getAttribute('data-search');
+                if (searchText.indexOf(filter) > -1) {
+                    item.style.display = "";
+                } else {
+                    item.style.display = "none";
+                }
+            });
+        }
+    </script>
+}

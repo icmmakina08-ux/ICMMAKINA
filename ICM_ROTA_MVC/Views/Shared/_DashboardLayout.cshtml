@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - ICM ROTA</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true" />
+</head>
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="brand">ICM ROTA</div>
+        </div>
+        <div class="sidebar-menu">
+            <div class="menu-label">Ana Menü</div>
+            <a href="@Url.Action("Index", "Home")" class="nav-link-custom active">
+                <i class="fa-solid fa-house"></i>
+                <span>Panel</span>
+            </a>
+            <a href="@Url.Action("Index", "Task")" class="nav-link-custom">
+                <i class="fa-solid fa-list-check"></i>
+                <span>Görevler (Tasks)</span>
+            </a>
+            
+            <div class="menu-label mt-4">Departmanlar</div>
+            <a href="#" class="nav-link-custom">
+                <i class="fa-solid fa-calendar-days"></i>
+                <span>Planlama</span>
+            </a>
+            <a href="#" class="nav-link-custom">
+                <i class="fa-solid fa-cart-shopping"></i>
+                <span>Satınalma</span>
+            </a>
+            <a href="#" class="nav-link-custom">
+                <i class="fa-solid fa-file-invoice-dollar"></i>
+                <span>Muhasebe</span>
+            </a>
+            <a href="#" class="nav-link-custom">
+                <i class="fa-solid fa-headset"></i>
+                <span>Satış Sonrası</span>
+            </a>
+
+            <div class="menu-label mt-4">İşlemler</div>
+            <a href="#" class="nav-link-custom">
+                <i class="fa-solid fa-route"></i>
+                <span>Rotalar</span>
+            </a>
+            <a href="#" class="nav-link-custom">
+                <i class="fa-solid fa-truck-manufacturing"></i>
+                <span>Üretim Hattı</span>
+            </a>
+            <a href="#" class="nav-link-custom">
+                <i class="fa-solid fa-clipboard-list"></i>
+                <span>İş Emirleri</span>
+            </a>
+
+            <div class="menu-label mt-4">Sistem</div>
+            <a href="#" class="nav-link-custom">
+                <i class="fa-solid fa-users"></i>
+                <span>Kullanıcılar</span>
+            </a>
+            <a href="#" class="nav-link-custom">
+                <i class="fa-solid fa-gear"></i>
+                <span>Ayarlar</span>
+            </a>
+            
+            <div style="margin-top: auto; padding-top: 40px;">
+                <a href="@Url.Action("Logout", "Account")" class="nav-link-custom text-danger">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                    <span>Çıkış Yap</span>
+                </a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Wrapper -->
+    <main class="main-wrapper">
+        <header class="top-header">
+            <div class="left-section">
+                @* Mobil menü butonu buraya gelebilir *@
+                <h5 class="m-0 fw-bold">@ViewData["Title"]</h5>
+            </div>
+            <div class="right-section">
+                <div class="user-profile">
+                    <div class="text-end d-none d-sm-block">
+                        <div class="fw-bold" style="font-size: 14px;">Giriş Yapıldı</div>
+                        <div class="text-muted" style="font-size: 12px;">Yönetici</div>
+                    </div>
+                    <div class="user-avatar">AD</div>
+                </div>
+            </div>
+        </header>
+
+        <div class="content-body">
+            @RenderBody()
+        </div>
+    </main>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

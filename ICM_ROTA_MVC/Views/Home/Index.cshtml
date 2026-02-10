@@ -1,8 +1,83 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Panel";
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="welcome-section mb-5">
+    <h2 class="fw-bold">Hoş Geldiniz!</h2>
+    <p class="text-muted">ICM Rota Yönetim Sistemi üzerinden operasyonlarınızı takip edebilirsiniz.</p>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="label">Aktif Rotalar</div>
+        <div class="value">124</div>
+    </div>
+    <div class="stat-card">
+        <div class="label">Bekleyen İş Emirleri</div>
+        <div class="value">42</div>
+    </div>
+    <div class="stat-card">
+        <div class="label">Tamamlanan Üretim</div>
+        <div class="value">892</div>
+    </div>
+    <div class="stat-card">
+        <div class="label">Verimlilik</div>
+        <div class="value">%94.2</div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm p-4 mb-4" style="border-radius: 12px;">
+            <h5 class="fw-bold mb-4">Son Aktiviteler</h5>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>İş No</th>
+                            <th>Müşteri</th>
+                            <th>Durum</th>
+                            <th>Tarih</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>#1024</td>
+                            <td>ICM Makina</td>
+                            <td><span class="badge bg-success-subtle text-success px-3">Tamamlandı</span></td>
+                            <td>Bugün</td>
+                        </tr>
+                        <tr>
+                            <td>#1023</td>
+                            <td>Global Lojistik</td>
+                            <td><span class="badge bg-warning-subtle text-warning px-3">Devam Ediyor</span></td>
+                            <td>Dün</td>
+                        </tr>
+                        <tr>
+                            <td>#1022</td>
+                            <td>Esen Ticaret</td>
+                            <td><span class="badge bg-danger-subtle text-danger px-3">Beklemede</span></td>
+                            <td>12 Şub</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm p-4" style="border-radius: 12px; background: linear-gradient(135deg, #f15a24 0%, #ff8c00 100%); color: white;">
+            <h5 class="fw-bold mb-3">Sistem Durumu</h5>
+            <p style="opacity: 0.9;">Servisler normal şekilde çalışıyor.</p>
+            <hr style="opacity: 0.3;">
+            <div class="d-flex justify-content-between mb-2">
+                <span>SQL Server</span>
+                <span class="fw-bold">Aktif</span>
+            </div>
+            <div class="d-flex justify-content-between">
+                <span>API Bağlantısı</span>
+                <span class="fw-bold">Başarılı</span>
+            </div>
+        </div>
+    </div>
 </div>

@@ -1,5 +1,4 @@
-@model ICM_ROTA_MVC.Models.User
-
+@model ICM_ROTA_MVC.Models.LoginViewModel
 @{
     Layout = null;
 }
@@ -7,47 +6,59 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Giriş Yap - ICM ROTA M3</title>
-    <link rel="stylesheet" href="~/css/login.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ICM ROTA - Kurumsal Giriş</title>
+    <link rel="stylesheet" href="~/css/login.css" asp-append-version="true" />
 </head>
-<body>
+<body class="login-body">
     <div class="login-container">
         <div class="login-card">
             <div class="login-header">
-                <div class="logo-placeholder">
-                    <span class="logo-text-orange">ICM</span>
-                    <span class="logo-text-black">ROTA M3</span>
-                </div>
-                <h2>Giriş Yap</h2>
-                <p class="subtitle">Görev takip sistemine hoş geldiniz</p>
+                <!-- Şirket Logosu -->
+                <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSf0W8FfR3W_qT2j8F-KIn6jU6Gv5TfXm-5Xw&s" alt="ICM Logo" class="company-logo" onerror="this.src='/images/logo.png';">
+                
+                <h1>ROTA SİSTEMİ</h1>
+                <p>Kurumsal hesabınızla giriş yapın</p>
             </div>
 
-            <form asp-action="Login" method="post" class="login-form">
-                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-                
+            <form asp-action="Login" method="post">
+                <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
                 <div class="form-group">
-                    <label asp-for="Username">Kullanıcı Adı</label>
-                    <input asp-for="Username" placeholder="Kullanıcı adınızı giriniz" required />
-                    <span asp-validation-for="Username" class="text-danger"></span>
+                    <label asp-for="Email">E-POSTA ADRESİ</label>
+                    <input asp-for="Email" class="form-control-custom" placeholder="ornek@icm.com.tr" autocomplete="off" />
+                    <span asp-validation-for="Email" class="text-danger"></span>
                 </div>
 
                 <div class="form-group">
-                    <label asp-for="Password">Şifre</label>
-                    <input asp-for="Password" type="password" placeholder="Şifrenizi giriniz" required />
+                    <label asp-for="Password">ŞİFRE</label>
+                    <input asp-for="Password" type="password" class="form-control-custom" placeholder="••••••••" />
                     <span asp-validation-for="Password" class="text-danger"></span>
                 </div>
 
-                <div class="form-actions">
-                    <a href="#" class="forgot-password">Şifremi Unuttum</a>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <input asp-for="RememberMe" type="checkbox" id="remember" style="accent-color: var(--icm-orange);" />
+                        <label for="remember" style="margin: 0; font-size: 13px; color: var(--text-muted); text-transform: none; font-weight: normal; letter-spacing: normal;">Beni hatırla</label>
+                    </div>
                 </div>
 
-                <button type="submit" class="login-button">
-                    Giriş Yap
-                </button>
+                <button type="submit" class="btn-login">GİRİŞ YAP</button>
             </form>
+
+            <div class="login-footer">
+                <a href="#">Teknik Destek Bildir</a>
+            </div>
         </div>
+        
+        <p style="text-align: center; color: #94a3b8; font-size: 12px; margin-top: 24px;">
+            &copy; 2026 ICM MAKİNA. Tüm hakları saklıdır.
+        </p>
     </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+    <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
 </body>
 </html>

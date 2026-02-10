@@ -1,17 +1,17 @@
-using ICM_ROTA_MVC.Data;
-using ICM_ROTA_MVC.Models;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using ICM_ROTA_MVC.Models;
+using Microsoft.Data.SqlClient;
 
 namespace ICM_ROTA_MVC.Controllers
 {
     public class AccountController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly string _connectionString;
 
-        public AccountController(ApplicationDbContext context)
+        public AccountController(IConfiguration configuration)
         {
-            _context = context;
+            _connectionString = configuration.GetConnectionString("DefaultConnection") 
+                ?? throw new InvalidOperationException("Bağlantı dizesi bulunamadı.");
         }
 
         [HttpGet]
@@ -21,23 +21,49 @@ namespace ICM_ROTA_MVC.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Login(User model)
+        public IActionResult Login(LoginViewModel model)
         {
             if (ModelState.IsValid)
             {
-                var user = await _context.Users
-                    .FirstOrDefaultAsync(u => u.Username == model.Username && u.Password == model.Password);
-
-                if (user != null)
+                try
                 {
-                    // Giriş başarılı, şimdilik ana sayfaya yönlendiriyoruz.
-                    // Gerçek uygulamada Cookie Authentication veya Session kullanılmalı.
-                    return RedirectToAction("Index", "Home");
-                }
+                    using (SqlConnection conn = new SqlConnection(_connectionString))
+                    {
+                        conn.Open();
+                        // KULLANICI_PANEL tablosunda Kullanıcı_Mail ve Password kontrolü
+                        string sql = "SELECT COUNT(1) FROM KULLANICI_PANEL WHERE Kullanıcı_Mail = @mail AND Password = @sifre";
+                        
+                        using (SqlCommand cmd = new SqlCommand(sql, conn))
+                        {
+                            cmd.Parameters.AddWithValue("@mail", model.Email);
+                            cmd.Parameters.AddWithValue("@sifre", model.Password);
 
-                ModelState.AddModelError(string.Empty, "Geçersiz kullanıcı adı veya şifre.");
+                            int userCount = (int)cmd.ExecuteScalar();
+
+                            if (userCount > 0)
+                            {
+                                // Şimdilik giriş başarılı sayıyoruz. 
+                                // Gelecekte Cookie authentication eklenebilir.
+                                return RedirectToAction("Index", "Home");
+                            }
+                            else
+                            {
+                                ModelState.AddModelError("", "E-posta adresi veya şifre hatalı.");
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    ModelState.AddModelError("", "Veritabanı bağlantı hatası: " + ex.Message);
+                }
             }
             return View(model);
+        }
+
+        public IActionResult Logout()
+        {
+            return RedirectToAction("Login");
         }
     }
 }
