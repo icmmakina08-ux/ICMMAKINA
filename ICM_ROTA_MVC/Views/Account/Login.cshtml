@@ -1,0 +1,53 @@
+@model ICM_ROTA_MVC.Models.User
+
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Giriş Yap - ICM ROTA M3</title>
+    <link rel="stylesheet" href="~/css/login.css" />
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="logo-placeholder">
+                    <span class="logo-text-orange">ICM</span>
+                    <span class="logo-text-black">ROTA M3</span>
+                </div>
+                <h2>Giriş Yap</h2>
+                <p class="subtitle">Görev takip sistemine hoş geldiniz</p>
+            </div>
+
+            <form asp-action="Login" method="post" class="login-form">
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                
+                <div class="form-group">
+                    <label asp-for="Username">Kullanıcı Adı</label>
+                    <input asp-for="Username" placeholder="Kullanıcı adınızı giriniz" required />
+                    <span asp-validation-for="Username" class="text-danger"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="Password">Şifre</label>
+                    <input asp-for="Password" type="password" placeholder="Şifrenizi giriniz" required />
+                    <span asp-validation-for="Password" class="text-danger"></span>
+                </div>
+
+                <div class="form-actions">
+                    <a href="#" class="forgot-password">Şifremi Unuttum</a>
+                </div>
+
+                <button type="submit" class="login-button">
+                    Giriş Yap
+                </button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
