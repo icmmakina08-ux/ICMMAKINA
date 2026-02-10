@@ -1,3 +1,0 @@
-﻿<Project>
-  <Import Project="..\buildMultiTargeting\ICM_ROTA_MVC.props" />
-</Project>
